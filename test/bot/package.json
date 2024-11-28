@@ -1,0 +1,17 @@
+{
+  "name": "libredis-test",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \\\"Error: no  specified\\\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/AID-LEARNING/libredis.git"
+  },
+  "private": true,
+  "dependencies": {
+    "bedrock-protocol": "^3.41.0"
+  }
+}

@@ -1,0 +1,25 @@
+{
+    "name": "aid-learning/libredis",
+    "description": "Redis Client for PMMP",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "SenseiTarzan\\libredis\\": "src/SenseiTarzan/libredis"
+        }
+    },
+    "authors": [
+        {
+            "name": "SenseiTarzan",
+            "email": "gabrielcaptari0@gmail.com"
+        }
+    ],
+    "require": {
+      "ext-igbinary": "*",
+      "ext-pmmpthread": "*",
+      "ext-redis": "*"
+    },
+    "require-dev": {
+        "sof3/await-generator": "^3.6",
+        "pocketmine/pocketmine-mp": "^5.21"
+    }
+}

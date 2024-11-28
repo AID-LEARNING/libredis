@@ -1,0 +1,12 @@
+---
+branches:
+  - master
+  - experimental
+projects:
+  "Testlibredis":
+    path: ""
+    icon: "icon.png"
+    lint:
+      phpstan: false
+    libs: []
+...

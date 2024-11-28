@@ -1,0 +1,5 @@
+name: libredis
+antigen: SenseiTarzan\libredis
+version: 0.0.1
+author: SenseiTarzan
+api: 5.0.0
