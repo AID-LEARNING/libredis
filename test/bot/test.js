@@ -3,7 +3,7 @@ const { createClient } = require('bedrock-protocol');
 const { v4: uuidv4 } = require('uuid'); // Utilisé pour générer un UUID
 
 if (cluster.isMaster) {
-    const totalBots = 200;
+    const totalBots = 300;
     const botsPerCluster = 20;
 
     const numClusters = Math.ceil(totalBots / botsPerCluster);
@@ -42,7 +42,7 @@ if (cluster.isMaster) {
     const startIndex = parseInt(process.env.START_INDEX, 10);
     const endIndex = parseInt(process.env.END_INDEX, 10);
 
-    const serverHost = '178.32.110.45';
+    const serverHost = '127.0.0.1';
     const serverPort = 19132;
 
     console.log(`Cluster ${process.pid} gère les bots de ${startIndex} à ${endIndex}.`);
@@ -127,6 +127,6 @@ if (cluster.isMaster) {
             console.log(`Cluster ${process.pid} déconnecte tous ses clients...`);
             clients.forEach(client => client.disconnect('Déconnexion forcée par le maître.'));
             process.exit(0);
-        }
+        }cd
     });
 }

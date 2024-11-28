@@ -1,6 +1,10 @@
 ## Objective of the Test
+- https://timings.pmmp.io/?id=338715
+- https://timings.pmmp.io/?id=338716
+- https://timings.pmmp.io/?id=338720 lag create with PlayerQuitEvent 180 * 10 request is 1800 request in parallel
+- https://timings.pmmp.io/?id=338725 after suppression of PlayerQuitEvent
 
-1. **Handle 135-180 simultaneous players**:
+1. **Handle 135-252 simultaneous players**:
    - Players can interact (e.g., send messages or join the server).
    - Data is fetched and incremented in Redis in real time.
 
@@ -11,7 +15,6 @@
 3. **Avoid excessive CPU usage**:
    - Overusing `asyncRequest` increases CPU load significantly.
    - Avoid introducing a delay (e.g., 99 ms) between the Redis thread and the main thread, especially under heavy load.
-
 ---
 
 ## Code Analysis
