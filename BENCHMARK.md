@@ -3,7 +3,7 @@
 - https://timings.pmmp.io/?id=338716
 - https://timings.pmmp.io/?id=338720 lag create with PlayerQuitEvent 180 * 10 request is 1800 request in parallel
 - https://timings.pmmp.io/?id=338725 after suppression of PlayerQuitEvent
-
+- https://timings.pmmp.io/?id=338744
 1. **Handle 135-252 simultaneous players**:
    - Players can interact (e.g., send messages or join the server).
    - Data is fetched and incremented in Redis in real time.
