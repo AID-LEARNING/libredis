@@ -8,7 +8,7 @@ abstract class Request
 {
 
 
-	public static function run(Redis $client, array $argv): Response
+	public static function run(Redis $client, array $argv): mixed
 	{
 		try {
 			return static::request($client, $argv);
@@ -17,7 +17,7 @@ abstract class Request
 			throw new RedisError(RedisError::STAGE_EXECUTE, $e->getMessage(), $argv);
 		}
 	}
-	protected static function request(Redis $client, array $argv): Response{
-		return Response::getEmpty();
+	protected static function request(Redis $client, array $argv): mixed{
+		return null;
 	}
 }

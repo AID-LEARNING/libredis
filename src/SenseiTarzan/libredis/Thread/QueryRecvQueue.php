@@ -21,7 +21,7 @@ class QueryRecvQueue extends ThreadSafe
 	 * @param int $queryId
 	 * @param Response $result
 	 */
-	public function publishResult(int $queryId, Response $result) : void{
+	public function publishResult(int $queryId, mixed $result) : void{
 		$this->synchronized(function() use ($queryId, $result) : void{
 			$this->queue[] = serialize([$queryId, $result]);
 			$this->notify();

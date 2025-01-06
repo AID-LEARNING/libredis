@@ -2,12 +2,13 @@
 
 namespace SenseiTarzan\libredis\Thread;
 
+use Closure;
 use Composer\Autoload\ClassLoader;
 use pmmp\thread\Thread as NativeThread;
 use pocketmine\snooze\SleeperHandlerEntry;
 use pocketmine\thread\Thread;
-use pocketmine\utils\Limits;
 use Redis;
+use SenseiTarzan\libredis\Class\ETypeRequest;
 use SenseiTarzan\libredis\Class\RedisError;
 use SenseiTarzan\libredis\Class\Request;
 use pocketmine\Server;
@@ -16,8 +17,6 @@ use Throwable;
 
 class ThreadRedis extends Thread
 {
-	private const REDIS_TPS = 5;
-	private const REDIS_TIME_PER_TICK = 1 / self::REDIS_TPS;
 
 	private static int $nextSlaveNumber = 0;
 
@@ -34,21 +33,22 @@ class ThreadRedis extends Thread
 		array         		 $config
 	)
 	{
-		$this->slaveId = self::$nextSlaveNumber++;
-		if(!libredis::isPackaged()){
-			/** @noinspection PhpUndefinedMethodInspection */
-			/** @noinspection NullPointerExceptionInspection */
-			/** @var ClassLoader $cl */
-			$cl = Server::getInstance()->getPluginManager()->getPlugin("DEVirion")->getVirionClassLoader();
-			$this->setClassLoaders([Server::getInstance()->getLoader(), $cl]);
-		}
-		$this->config = igbinary_serialize($config);
-		$this->start(NativeThread::INHERIT_INI);
+        $this->slaveId = self::$nextSlaveNumber++;
+        if(!libredis::isPackaged()){
+            /** @noinspection PhpUndefinedMethodInspection */
+            /** @noinspection NullPointerExceptionInspection */
+            /** @var ClassLoader $cl */
+            $cl = Server::getInstance()->getPluginManager()->getPlugin("DEVirion")->getVirionClassLoader();
+            $this->setClassLoaders([Server::getInstance()->getLoader(), $cl]);
+        }
+        $this->config = igbinary_serialize($config);
+        $this->start(NativeThread::INHERIT_INI);
 	}
 
 	protected function onRun(): void
 	{
 		$notifier = $this->sleeperEntry->createNotifier();
+        $runner_class = [];
 		try {
 			$client = new Redis(igbinary_unserialize($this->config));
 			$this->connCreated = true;
@@ -58,30 +58,32 @@ class ThreadRedis extends Thread
 			return;
 		}
 		while(true) {
-			$start = microtime(true);
-			$this->busy = true;
-			for ($i = 0; $i < 100; ++$i){
-				$row = $this->bufferSend->fetchQuery();
-				if (!is_string($row)) {
-					$this->busy = false;
-					break 2;
-				}
-				/**
-				 * @var class-string<Request> $request
-				 */
-				[$queryId, $request, $argv] = unserialize($row, ['allowed_classes' => true]);
-				try{
-						$this->bufferRecv->publishResult($queryId, $request::run($client, $argv));
-				}catch(RedisError $error){
-					$this->bufferRecv->publishError($queryId, $error);
-				}
-				$notifier->wakeupSleeper();
-			}
+            $row = $this->bufferSend->fetchQuery();
+            if ($row === null)
+                break ;
+            $this->busy = true;
+            /**
+             * @var class-string<Request>|Closure($client, $argv): mixed $request
+             */
+            $queryId = $row[0];
+            $type = ETypeRequest::tryFrom($row[1]);
+            $request = $row[2];
+            $argv = igbinary_unserialize($row[3]);
+            try{
+                if ($type === ETypeRequest::STRING_CLASS) {
+                    if (!isset($runner_class[$request]))
+                        $runner_class[$request] = $request::run(...);
+                    $this->bufferRecv->publishResult($queryId, $runner_class[$request]($client, $argv));
+                }else if ($type === ETypeRequest::CLOSURE) {
+                    $this->bufferRecv->publishResult($queryId, $request($client, $argv));
+                } else {
+                    throw new RedisError(RedisError::STAGE_EXECUTE, "Unsupported type");
+                }
+            }catch(Throwable $error){
+                $this->bufferRecv->publishError($queryId, new RedisError(RedisError::STAGE_RESPONSE, $error->getMessage(), $argv));
+            }
+            $notifier->wakeupSleeper();
 			$this->busy = false;
-			$time = microtime(true) - $start;
-			if($time < self::REDIS_TIME_PER_TICK){
-				@time_sleep_until(microtime(true) + self::REDIS_TIME_PER_TICK - $time);
-			}
 		}
 		$client->close();
 	}

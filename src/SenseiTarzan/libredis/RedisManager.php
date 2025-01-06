@@ -19,6 +19,7 @@ use pocketmine\utils\Terminal;
 use Redis;
 use RedisException;
 use ReflectionClass;
+use SenseiTarzan\libredis\Class\ETypeRequest;
 use SenseiTarzan\libredis\Class\RedisError;
 use SenseiTarzan\libredis\Class\Request;
 use SenseiTarzan\libredis\Class\Response;
@@ -66,10 +67,9 @@ class RedisManager
 		$this->sleeperHandlerEntry = $plugin->getServer()->getTickSleeper()->addNotifier(function(): void {
 			$this->checkResults();
 		});
-		$this->addWorker();
 	}
 
-	public function addWorker(): void
+	private function addWorker(): void
 	{
 		$this->workers[$this->workerCount++] =  new ThreadRedis($this->sleeperHandlerEntry, $this->bufferSend, $this->bufferRecv, $this->config);
 	}
@@ -91,14 +91,14 @@ class RedisManager
 		$this->redis->close();
 	}
 
-	/**
-	 * @param class-string<Request> $request
-	 * @param array $argv
-	 * @param callable|null $handler
-	 * @param callable|null $onError
-	 * @throws QueueShutdownException
-	 */
-	public function executeRequestOnThread(string $request, array $argv = [], ?callable $handler = null, ?callable $onError = null) : void{
+    /**
+     * @param ETypeRequest $type
+     * @param class-string<Request>|Closure($client, $argv): Response $request
+     * @param array $argv
+     * @param callable|null $handler
+     * @param callable|null $onError
+     */
+	public function executeRequestOnThread(ETypeRequest $type, string|Closure $request, ?array $argv = null, ?callable $handler = null, ?callable $onError = null) : void{
 		$queryId = self::$queryId++;
 		$trace = libredis::isPackaged() ? null : new Exception("(This is the original stack trace for the following error)");
 		$this->handlers[$queryId] = function(RedisError|Response $results) use ($handler, $onError, $trace){
@@ -146,49 +146,56 @@ class RedisManager
 			}
 		};
 
-		$this->addQuery($queryId, $request, $argv);
+		$this->addQuery($queryId, $type, $request, $argv);
 	}
 
-	/**
-	 * @param string $request
-	 * @param array $argv
-	 * @return Generator
-	 * @throws QueueShutdownException
-	 */
-	public function asyncRequest(string $request, array $argv = []): Generator
+    /**
+     * @param ETypeRequest $type
+     * @param class-string<Request>|Closure($client, $argv): Response $request
+     * @param array $argv
+     * @return Generator
+     */
+	public function asyncRequest(ETypeRequest $type, string|Closure $request, array $argv = []): Generator
 	{
 		$onSuccess = yield Await::RESOLVE;
 		$onError = yield Await::REJECT;
-		$this->executeRequestOnThread($request, $argv, $onSuccess, $onError);
+		$this->executeRequestOnThread($type, $request, $argv, $onSuccess, $onError);
 		return yield Await::ONCE;
 	}
 
-	/**
-	 * @param class-string<Request> $request
-	 * @param array $argv
-	 * @return Response
-	 */
-	public function syncRequest(string $request, array $argv = []): Response
+    /**
+     * @param ETypeRequest $type
+     * @param class-string<Request>|Closure($client, $argv): Response $request
+     * @param array|null $argv
+     * @return Response
+     */
+	public function syncRequest(ETypeRequest $type, string|Closure $request, ?array $argv = null): Response
 	{
-		return $request::run($this->redis, $argv);
+        if ($type == ETypeRequest::CLASS)
+            $response = $request::run($this->redis, $argv);
+        elseif ($type == ETypeRequest::CLOSURE)
+            $response = $request($this->redis, $argv);
+        else{
+            throw new RedisError(RedisError::STAGE_EXECUTE, "Not implemented");
+        }
+        return $response;
 	}
 
 
-	/**
-	 * @param int $queryId
-	 * @param class-string<Request> $request
-	 * @param array $argv
-	 * @return void
-	 * @throws QueueShutdownException
-	 */
-	private function addQuery(int $queryId, string $request, array $argv = []) : void{
-		$this->bufferSend->scheduleQuery($queryId, $request, $argv);
+    /**
+     * @param int $queryId
+     * @param ETypeRequest $type
+     * @param class-string<Request>|Closure($client, $argv): Response $request
+     * @param array|null $argv
+     * @return void
+     */
+	private function addQuery(int $queryId, ETypeRequest $type, string|Closure $request, ?array $argv  = null) : void{
+		$this->bufferSend->scheduleQuery($queryId, $type, $request, $argv);
 		foreach ($this->workers as $worker) {
 			if(!$worker->isBusy()){
 				return;
 			}
 		}
-		unset($iterator);
 		if($this->workerCount < $this->workerCountMax){
 			$this->addWorker();
 		}
@@ -261,6 +268,6 @@ class RedisManager
 	}
 
 	public function getLoad() : float{
-		return $this->bufferSend->count() / (float) $this->workers->getSize();
+		return $this->bufferSend->count() / (float) count($this->workers);
 	}
 }
