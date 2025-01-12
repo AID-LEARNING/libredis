@@ -16,7 +16,8 @@
     "require": {
       "ext-igbinary": "*",
       "ext-pmmpthread": "*",
-      "ext-redis": "*"
+      "ext-redis": "*",
+      "ext-parallel": "*"
     },
     "require-dev": {
         "sof3/await-generator": "^3.6",

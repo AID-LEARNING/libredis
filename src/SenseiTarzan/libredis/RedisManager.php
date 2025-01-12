@@ -67,6 +67,7 @@ class RedisManager
 		$this->sleeperHandlerEntry = $plugin->getServer()->getTickSleeper()->addNotifier(function(): void {
 			$this->checkResults();
 		});
+        $this->addWorker();
 	}
 
 	private function addWorker(): void
@@ -171,7 +172,7 @@ class RedisManager
      */
 	public function syncRequest(ETypeRequest $type, string|Closure $request, ?array $argv = null): Response
 	{
-        if ($type == ETypeRequest::CLASS)
+        if ($type == ETypeRequest::STRING_CLASS)
             $response = $request::run($this->redis, $argv);
         elseif ($type == ETypeRequest::CLOSURE)
             $response = $request($this->redis, $argv);
