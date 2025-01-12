@@ -99,7 +99,7 @@ class RedisManager
      * @param callable|null $handler
      * @param callable|null $onError
      */
-	public function executeRequestOnThread(ETypeRequest $type, string|Closure $request, ?array $argv = null, ?callable $handler = null, ?callable $onError = null) : void{
+	public function executeRequestOnThread(ETypeRequest|string $type, string|Closure $request, ?array $argv = null, ?callable $handler = null, ?callable $onError = null) : void{
 		$queryId = self::$queryId++;
 		$trace = libredis::isPackaged() ? null : new Exception("(This is the original stack trace for the following error)");
 		$this->handlers[$queryId] = function(RedisError|Response $results) use ($handler, $onError, $trace){
@@ -156,7 +156,7 @@ class RedisManager
      * @param array $argv
      * @return Generator
      */
-	public function asyncRequest(ETypeRequest $type, string|Closure $request, array $argv = []): Generator
+	public function asyncRequest(ETypeRequest|string $type, string|Closure $request, array $argv = []): Generator
 	{
 		$onSuccess = yield Await::RESOLVE;
 		$onError = yield Await::REJECT;
@@ -190,7 +190,7 @@ class RedisManager
      * @param array|null $argv
      * @return void
      */
-	private function addQuery(int $queryId, ETypeRequest $type, string|Closure $request, ?array $argv  = null) : void{
+	private function addQuery(int $queryId, ETypeRequest|string $type, string|Closure $request, ?array $argv  = null) : void{
 		$this->bufferSend->scheduleQuery($queryId, $type, $request, $argv);
 		foreach ($this->workers as $worker) {
 			if(!$worker->isBusy()){
