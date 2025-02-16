@@ -170,8 +170,10 @@ class RedisManager
      * @param array|null $argv
      * @return Response
      */
-	public function syncRequest(ETypeRequest $type, string|Closure $request, ?array $argv = null): mixed
+	public function syncRequest(ETypeRequest|string $type, string|Closure $request, ?array $argv = null): mixed
 	{
+        if(is_string($type))
+            $type = ETypeRequest::from($type);
         if ($type == ETypeRequest::STRING_CLASS)
             $response = $request::run($this->redis, $argv);
         elseif ($type == ETypeRequest::CLOSURE)
