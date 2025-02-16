@@ -20,13 +20,13 @@ class QuerySendQueue extends ThreadSafe
 		$this->queries = new ThreadSafeArray();
 	}
 
-	/**
-	 * @param int $queryId
-	 * @param class-string<Request> $request
-	 * @param ?array $argv
-	 * @return void
-	 * @throws QueueShutdownException
-	 */
+    /**
+     * @param int $queryId
+     * @param ETypeRequest|string $type
+     * @param string|Closure $request
+     * @param ?array $argv
+     * @return void
+     */
 	public function scheduleQuery(int $queryId, ETypeRequest|string $type, string|Closure $request, ?array $argv = null): void {
 		if($this->invalidated){
 			throw new QueueShutdownException("You cannot schedule a query on an invalidated queue.");
