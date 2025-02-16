@@ -102,7 +102,7 @@ class RedisManager
 	public function executeRequestOnThread(ETypeRequest|string $type, string|Closure $request, ?array $argv = null, ?callable $handler = null, ?callable $onError = null) : void{
 		$queryId = self::$queryId++;
 		$trace = libredis::isPackaged() ? null : new Exception("(This is the original stack trace for the following error)");
-		$this->handlers[$queryId] = function(RedisError|Response $results) use ($handler, $onError, $trace){
+		$this->handlers[$queryId] = function(mixed $results) use ($handler, $onError, $trace){
 			if($results instanceof RedisError){
 				$this->reportError($onError, $results, $trace);
 			}else{
